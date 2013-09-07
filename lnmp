@@ -1,0 +1,107 @@
+#!/bin/bash
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
+export PATH
+
+# Check if user is root
+if [ $(id -u) != "0" ]; then
+    printf "Error: You must be root to run this script!\n"
+    exit 1
+fi
+
+printf "=========================================================================\n"
+printf "Manager for LNMP V0.9  ,  Written by Licess \n"
+printf "=========================================================================\n"
+printf "LNMP is a tool to auto-compile & install Nginx+MySQL+PHP on Linux \n"
+printf "This script is a tool to Manage status of lnmp \n"
+printf "For more information please visit http://www.lnmp.org \n"
+printf "\n"
+printf "Usage: /root/lnmp {start|stop|reload|restart|kill|status}\n"
+printf "=========================================================================\n"
+
+NGINXDAEMON=/usr/local/nginx/sbin/nginx
+NGINXPIDFILE=/usr/local/nginx/logs/nginx.pid
+PHPFPMPID=/usr/local/php/var/run/php-fpm.pid
+MYSQLPID=/usr/local/mysql/var/`hostname`.pid
+
+function_start()
+{
+    printf "Starting LNMP...\n"
+    if [ -f $NGINXPIDFILE ]; then
+      printf "Nginx is runing!\n"
+      exit 1
+    else  
+        /etc/init.d/nginx start
+    fi
+    if [ -f $PHPFPMPID ]; then
+      printf "PHP-FPM is runing!\n"
+      exit 1
+    else  
+        /etc/init.d/php-fpm start
+    fi
+/etc/init.d/mysql start
+}
+
+function_stop()
+{
+    printf "Stoping LNMP...\n"
+    if  [ -f $NGINXPIDFILE ]; then
+        /etc/init.d/nginx stop
+    else  
+        printf "Nginx program is not runing!\n" 
+    fi
+    /etc/init.d/mysql stop
+    /etc/init.d/php-fpm stop
+}
+
+function_reload()
+{
+    printf "Reload LNMP...\n"
+    printf "Reload Nginx configure...\n"
+    $NGINXDAEMON -t
+    /etc/init.d/nginx reload
+    printf "Nginx program is reloding!\n"
+    /etc/init.d/mysql reload
+    /etc/init.d/php-fpm reload
+}
+
+function_kill()
+{
+    /etc/init.d/nginx stop
+    /etc/init.d/mysql stop
+    /etc/init.d/php-fpm stop
+    killall nginx
+    killall mysqld mysqld_safe
+    killall php-fpm
+}
+
+function_status()
+{
+    if [ -f $NGINXPIDFILE ]; then
+      printf "Nginx is runing!\n"
+    else
+	printf "Nginx is stop!\n"
+    fi
+    if [ -f $PHPFPMPID ]; then
+      printf "PHP-FPM is runing!\n"
+    else
+	printf "PHP-FPM is stop!\n"
+    fi
+/etc/init.d/mysql status
+}
+
+if [ "$1" = "start" ]; then
+    function_start
+elif [ "$1" = "stop" ]; then
+    function_stop
+elif [ "$1" = "reload" ]; then
+    function_reload
+elif [ "$1" = "restart" ]; then
+    function_stop
+    function_start
+elif [ "$1" = "kill" ]; then
+    function_kill
+elif [ "$1" = "status" ]; then
+    function_status
+else
+    printf "Usage: /root/lnmp {start|stop|reload|restart|kill|status}\n"
+fi
